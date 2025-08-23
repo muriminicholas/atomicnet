@@ -1,0 +1,55 @@
+/* Custom styles for background image and larger screens */
+body {
+    background:  url('internet1.jpg') no-repeat center center fixed; /* fallback color and optimized image */
+    background-size: cover;
+    min-height: 100vh; /* Ensure body covers full screen height */
+}
+
+@media (min-width: 1024px) {
+    .container {
+        max-width: fit-content; /* Balanced content width */
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 8rem; /* Increased padding to push content inward */
+        padding-right: 8rem; /* Increased padding to push content inward */
+    }
+    .package-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 columns for better fit */
+    }
+    .section {
+        padding: 1.5rem; /* Adjusted for compact layout */
+    }
+    .header {
+        padding: 1.5rem 3rem; /* Adjusted for compact layout */
+    }
+    .header h1:first-child {
+        font-size: 2.25rem; /* Slightly smaller for compact layout */
+    }
+    .header h1:last-child {
+        font-size: 1.25rem; /* Slightly smaller for compact layout */
+        margin-left: 0;
+    }
+    .form-input {
+        padding: 0.5rem; /* Adjusted for compact layout */
+    }
+    .form-button {
+        padding: 0.5rem; /* Adjusted for compact layout */
+    }
+    .customer-support {
+        margin-left: 0rem; /* Equivalent to ml-20 (20px / 4 = 5rem) */
+    }
+    .customer-support h2 {
+        font-size: 1.75rem; /* Larger font size for heading */
+    }
+    .customer-support p {
+        font-size: 1.125rem; /* Larger font size for paragraphs */
+    }
+    .customer-support strong {
+        font-size: 1.25rem; /* Larger font size for strong elements */
+    }
+    button:hover {
+    transform: scaley(1.20); /* Scale up 5% */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2); /* Larger shadow */
+}
+
+}
