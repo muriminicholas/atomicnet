@@ -12,11 +12,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/**", "/", "/index.html", "/static/**").permitAll()
-                .anyRequest().authenticated()
-            )
+       .csrf(csrf -> csrf.disable())
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers(
+                "/", "/index.html", 
+                "/styles.css", "/script.js",
+                "/api/**"  // your API endpoints
+            ).permitAll()
+            .anyRequest().authenticated()
+        )
             .cors(cors -> cors.configurationSource(request -> {
                 var corsConfig = new org.springframework.web.cors.CorsConfiguration();
                 corsConfig.addAllowedOrigin("http://localhost:5173");
