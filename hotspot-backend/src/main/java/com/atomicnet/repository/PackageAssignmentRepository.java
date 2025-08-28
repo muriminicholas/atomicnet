@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface PackageAssignmentRepository extends JpaRepository<PackageAssignment, Long> {
     Optional<PackageAssignment> findByUsernameAndActiveTrue(String username);
     Optional<PackageAssignment> findByUsername(String username);
+    Optional<PackageAssignment> findByCheckoutRequestId(String checkoutRequestId);
 }

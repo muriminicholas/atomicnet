@@ -1,7 +1,14 @@
 package com.atomicnet.entity;
 
+import jakarta.persistence.*;
 
+
+@Entity
 public class PackageInfo {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // auto-increment
+
     private String type;
     private int price;
     private int durationHours;

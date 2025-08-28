@@ -9,6 +9,7 @@ public class PackageAssignment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+private String checkoutRequestId; 
     private String username;
     private String packageType;
     private int bandwidthMbps;
@@ -17,6 +18,13 @@ public class PackageAssignment {
     private boolean active;
 
     // Getters and Setters
+       public String getCheckoutRequestId() {
+        return checkoutRequestId;
+    }
+
+    public void setCheckoutRequestId(String checkoutRequestId) {
+        this.checkoutRequestId = checkoutRequestId;
+    }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getUsername() { return username; }
