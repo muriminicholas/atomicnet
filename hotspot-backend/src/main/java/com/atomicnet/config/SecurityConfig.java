@@ -17,7 +17,7 @@ public class SecurityConfig {
             .requestMatchers(
                 "/", "/index.html", 
                 "/styles.css", "/script.js",
-                "/api/**"  // your API endpoints
+                "/api/**" ,"/internet1.jpg" // your API endpoints
             ).permitAll()
             .anyRequest().authenticated()
         )
