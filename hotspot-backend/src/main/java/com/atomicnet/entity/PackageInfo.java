@@ -7,8 +7,8 @@ import jakarta.persistence.*;
 public class PackageInfo {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // auto-increment
-
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private String type;
     private int price;
     private int durationHours;
