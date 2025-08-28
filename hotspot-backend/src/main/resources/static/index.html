@@ -1,130 +1,72 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Atomicnet hotspot</title>
-<script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Atomicnet hotspot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css" />
 </head>
-<body class="bg-gradient-to-br from-pink-50 via-white to-blue-50 text-gray-800 font-sans">
+<body class="text-gray-800 font-semibold flex flex-col lg:ml-40 lg:mr-40">
+    <div class="container  items-center px-4 lg:px-0">
+        <header class="bg-gradient-to-r from-pink-400 to-blue-400 mb-10 text-white p-5 shadow-lg text-center rounded-b-xl header">
+            <h1 class="text-3xl font-sans">     💥   Atomicnet          🛫   </h1>
+            <h1 class="text-xl ml-40 lg:ml-0 text-gray-800">Your Netpilot. 🚀</h1>
+        </header>
 
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const baseUrl = 'http://localhost:8081/api';
-    document.getElementById('one-hour-btn').addEventListener('click', async () => {
-      const response = await fetch(`${baseUrl}/package/one_hour`, { method: 'POST' });
-      const result = await response.json();
-      alert(result); // Add feedback
-    });
-    document.getElementById('two-hour-btn').addEventListener('click', async () => {
-      const response = await fetch(`${baseUrl}/package/two_hour`, { method: 'POST' });
-      const result = await response.json();
-      alert(result); // Add feedback
-    });
-    document.getElementById('four-hour-btn').addEventListener('click', async () => {
-      const response = await fetch(`${baseUrl}/package/four_hour`, { method: 'POST' });
-      const result = await response.json();
-      alert(result); // Add feedback
-    });
-    document.getElementById('six-hour-btn').addEventListener('click', async () => {
-      const response = await fetch(`${baseUrl}/package/six_hour`, { method: 'POST' });
-      const result = await response.json();
-      alert(result); // Add feedback
-    });
-    document.getElementById('one-day-btn').addEventListener('click', async () => {
-      const response = await fetch(`${baseUrl}/package/one_day`, { method: 'POST' });
-      const result = await response.json();
-      alert(result); // Add feedback
-    });
-    document.getElementById('two-day-btn').addEventListener('click', async () => {
-      const response = await fetch(`${baseUrl}/package/two_day`, { method: 'POST' });
-      const result = await response.json();
-      alert(result); // Add feedback
-    });
-    document.getElementById('weekly-btn').addEventListener('click', async () => {
-      const response = await fetch(`${baseUrl}/package/weekly`, { method: 'POST' });
-      const result = await response.json();
-      alert(result); // Add feedback
-    });
-    document.getElementById('monthly-btn').addEventListener('click', async () => {
-      const response = await fetch(`${baseUrl}/package/monthly`, { method: 'POST' });
-      const result = await response.json();
-      alert(result); // Add feedback
-    });
-    document.getElementById('login-btn').addEventListener('click', async () => {
-      const username = document.querySelector('input[type="text"][placeholder="Username"]').value;
-      const password = document.querySelector('input[type="password"]').value;
-      const response = await fetch(`${baseUrl}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const result = await response.json();
-      alert(result); // Add feedback
-    });
-    document.getElementById('activate-btn').addEventListener('click', async () => {
-      const voucherCode = document.querySelector('input[type="text"][placeholder="Voucher Code"]').value;
-      const response = await fetch(`${baseUrl}/activate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ voucherCode })
-      });
-      const result = await response.json();
-      alert(result); // Add feedback
-    });
-    document.getElementById('create-account-btn').addEventListener('click', async () => {
-      const username = document.querySelector('input[type="text"][placeholder="Username"]').value;
-      const password = document.querySelector('input[type="password"]').value;
-      const response = await fetch(`${baseUrl}/create_account`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const result = await response.json();
-      alert(result); // Add feedback
-    });
-  });
-</script>
+        <section class="bg-gradient-to-r section from-blue-400 to-gray-500 backdrop-blur-md p-5 shadow-md mb-4 rounded-xl ">
+            <h2 class="text-xl font-semibold mb-10  text-pink-600">How to purchase</h2>
+            <p class="mb-2">To connect, choose a package, log in, or activate a voucher. Follow the prompts to gain internet access.</p>
+            <p> 1.Tap on your preffered package.</p>
+            <p>2.Enter your phone number</p>
+            <p>3.Click "PAY NOW"</p>
+            <p>4.Enter your m-pesa pin, wait for 30sec for mpesa authentication.</p>
+                <p>Need help? Call <strong class="text-blue-600">0704 204 582</strong> or email <strong class="text-blue-600">support@atomicnet.com</strong></p>
+        </section>
 
-<header class="bg-gradient-to-r from-pink-400 to-blue-400 text-white p-5 shadow-lg text-center rounded-b-xl">
-    <h1 class="text-3xl font-sans"> 🚀 Atomicnet 🛫💥</h1>
-  <h1 class="text-xl  ml-40 text-gray-800 ">Your Netpilot.</h1>
-</header>
+        <section class=" backdrop-blur-md p-5 shadow-md mb-4 rounded-xl section">
+            <h2 class="text-xl font-semibold mb-4 text-blue-900">Select a package to get started</h2>
+            <div class="grid grid-cols-2 gap-5 package-button   package-grid">
+                <button id="one-hour-btn" data-amount="10" data-duration="1" data-bandwidth="5" class="bg-gradient-to-r from-pink-400 to-pink-500 text-white p-3 rounded-lg border border-blue-600 shadow hover:opacity-90">1 Hour <br ><p class="text-red-900 font-sans">Ksh.10</p>        </button>
+                <button id="two-hour-btn" data-amount="15" data-duration="2" data-bandwidth="5" class="bg-gradient-to-r from-pink-400 to-pink-500 text-white p-3 rounded-lg border border-green-600 shadow hover:opacity-90">2 Hours <br> <p class="text-red-900 font-sans">Ksh.15</p>       </button>
+                <button id="four-hour-btn" data-amount="25" data-duration="4" data-bandwidth="5" class="bg-gradient-to-r from-blue-400 to-blue-500 text-white p-3 rounded-lg border  border-red-600 shadow hover:opacity-90">4 Hours <br><p class="text-red-900 font-sans">Ksh.25</p>       </button>
+                <button id="six-hour-btn" data-amount="30" data-duration="6" data-bandwidth="5" class="bg-gradient-to-r from-blue-400 to-blue-500 text-white p-3 rounded-lg border border-green-600  shadow hover:opacity-90">6 Hours <br><p class="text-red-900 font-sans">Ksh.30</p>        </button>
+                <button id="one-day-btn" data-amount="40" data-duration="24" data-bandwidth="5" class="bg-gradient-to-r from-green-400 to-green-500 text-white p-3 rounded-lg border border-blue-600 shadow hover:opacity-90">Full Day <br><p class="text-red-900 font-sans">Ksh.40</p>     </button>
+                <button id="two-day-btn" data-amount="70" data-duration="48" data-bandwidth="5" class="bg-gradient-to-r from-green-400 to-green-500 text-white p-3 rounded-lg border  border-red-600 shadow hover:opacity-90">2 Days <br><p class="text-red-900 font-sans">Ksh.70</p>       </button>
+                <button id="weekly-btn" data-amount="250" data-duration="168" data-bandwidth="5" class="bg-gradient-to-r from-purple-400 to-purple-500 text-white p-3 rounded-lg border border-red-600 shadow hover:opacity-90">Weekly <br><p class="text-red-900 font-sans">Ksh.250</p>                    </button>
+                <button id="monthly-btn" data-amount="900" data-duration="720" data-bandwidth="5" class="bg-gradient-to-r from-purple-400 to-purple-500 text-white p-3 rounded-lg border border-green-800  shadow hover:opacity-90">Monthly <br><p class="text-red-900 font-sans">Ksh.900</p>                         </button>
+            </div>
+        </section>
+            <section class="bg-gradient-to-r from-gray-100 to-green-100 backdrop-blur-md p-5 shadow-md mb-4 rounded-xl section">
+         
+            <h2 class="text-xl font-semibold mb-2 text-pink-600">Voucher Activation & Reconnect</h2>       <h2>(Enter mpesa code below from the payment you made eg:QAH9QWWZRR )</h2>
+            <input id="mpesa-transaction-code" type="text" placeholder="MPESA Transaction Code" class="w-full mb-2 p-2 border rounded focus:ring-2 focus:ring-pink-300 form-input mt-4" />
+            <button id="reconnect-btn" class="bg-gradient-to-r from-blue-400 to-blue-500 text-white p-2 rounded w-full hover:scale-y-105 hover:shadow-lg hover:opacity-90 transition-all duration-200 form-button">Reconnect</button>
+ 
+            <h2 class="text-gray-800 ml-5 "> (Call admin for voucher recharge incase your payment is not successful)</h2> 
+            <input id="voucher-code" type="text" placeholder="Voucher Code" class="w-full mb-2 p-2 border rounded focus:ring-2 focus:ring-pink-300 form-input" />
+            <button id="activate-btn" class="bg-gradient-to-r from-purple-400 to-purple-500 text-white p-2 rounded w-full hover:scale-y-105 hover:shadow-lg hover:opacity-90 transition-all duration-200 form-button">Activate</button>
+            
+        </section>
 
-<section class="bg-white/80 backdrop-blur-md p-5 shadow-md mb-4 rounded-xl">
-  <h2 class="text-xl font-semibold mb-2 text-pink-600">Customer Support</h2>
-  <p class="mb-2">To connect, choose a package, log in, or activate a voucher. Follow the prompts to gain internet access.</p>
-  <p>Need help? Call <strong class="text-blue-600">0704 204 582</strong> or email <strong class="text-blue-600">support@atomicnet.com</strong></p>
-</section>
+   
+        <section class="bg-gradient-to-r from-green-100 to-green-900 backdrop-blur-md p-5 shadow-md mb-4 rounded-xl section">
 
-<section class="bg-white/80 backdrop-blur-md p-5 shadow-md mb-4 rounded-xl">
-  <h2 class="text-xl font-semibold mb-4 text-pink-600">Select a package to get started</h2>
-  <div class="grid grid-cols-2 gap-3">
-    <button Id="one-hour-btn"   class="bg-gradient-to-r from-pink-400 to-pink-500 text-white p-3 rounded-lg shadow hover:opacity-90">1 Hour - Ksh.10</button>
-    <button Id="two-hour-btn"   class="bg-gradient-to-r from-pink-400 to-pink-500 text-white p-3 rounded-lg shadow hover:opacity-90">2 Hours - Ksh.15</button>
-    <button Id="four-hour-btn"  class="bg-gradient-to-r from-blue-400 to-blue-500 text-white p-3 rounded-lg shadow hover:opacity-90">4 Hours - Ksh.25</button>
-    <button Id="six-hour-btn"   class="bg-gradient-to-r from-blue-400 to-blue-500 text-white p-3 rounded-lg shadow hover:opacity-90">6 Hours - Ksh.30</button>
-    <button Id="one-day-btn"    class="bg-gradient-to-r from-green-400 to-green-500 text-white p-3 rounded-lg shadow hover:opacity-90">Full Day - Ksh.40</button>
-    <button Id="two-day-btn"    class="bg-gradient-to-r from-green-400 to-green-500 text-white p-3 rounded-lg shadow hover:opacity-90">2 Days - Ksh. 70</button>
-    <button Id="weekly-btn"      class="bg-gradient-to-r from-purple-400 to-purple-500 text-white p-3 rounded-lg shadow hover:opacity-90">Weekly - Ksh 250</button>
-    <button Id="monthly-btn"      class="bg-gradient-to-r from-purple-400 to-purple-500 text-white p-3 rounded-lg shadow hover:opacity-90">Monthly - Ksh.900 </button>
-  </div>
-</section>
+            <h2 class="text-xl font-semibold mb-2 text-pink-600">Account Login</h2>
+            <h2  class="text-xl font-bold mb-2 text-gray-900"> Create an account to access exclusive package plan, follow prompts and subscribe to become one of our esteemed partners.
+        
+            </h2>
+            <input type="text" placeholder="Username" class="w-full mb-2 p-2 border rounded focus:ring-3 focus:ring-pink-600 form-input" />
+            <input type="password" placeholder="Password" class="w-full mb-2 p-2 border rounded focus:ring-3 focus:ring-pink-600 form-input" />
+                        <div class="flex gap-4">
+                <button id="login-btn" class="bg-gradient-to-r from-blue-400 to-blue-500 text-white p-2 rounded w-1/2 hover:scale-y-105 hover:shadow-lg hover:opacity-90 transition-all duration-200 form-button">Login</button>
+                <button id="forgot-password-btn" class="bg-gradient-to-r from-gray-400 to-gray-500 text-white p-2 rounded w-1/2 hover:scale-y-105 hover:shadow-lg hover:opacity-90 transition-all duration-200 form-button">Forgot Password</button>
+            </div>
 
-<section class="bg-white/80 backdrop-blur-md p-5 shadow-md mb-4 rounded-xl">
-  <h2   class="text-xl font-semibold mb-2 text-pink-600">Account Login</h2>
-  <input type="text" placeholder="Username" class="w-full mb-2 p-2 border rounded focus:ring-2 focus:ring-pink-300" />
-<section class="bg-white/80 backdrop-blur-md p-5 shadow-md mb-4 rounded-xl">
-  <h2 class="text-xl font-semibold mb-2 text-pink-600">Account Login</h2>
-  <input type="text" placeholder="Username" class="w-full mb-2 p-2 border rounded focus:ring-2 focus:ring-pink-300" />
-  <input type="password" placeholder="Password" class="w-full mb-2 p-2 border rounded focus:ring-2 focus:ring-pink-300" />
-  <button id="login-btn" class="bg-gradient-to-r from-green-400 to-green-500 text-white p-2 rounded w-full hover:opacity-90">Login</button>
-  <button id="create-account-btn" class="bg-gray-200 text-gray-800 p-2 rounded w-full mt-2 hover:bg-gray-300">Create Account</button>
-</section>
-
-<section class="bg-white/80 backdrop-blur-md p-5 shadow-md rounded-xl">
-  <h2 class="text-xl font-semibold mb-2 text-pink-600">Voucher Activation</h2>
-  <input type="text" placeholder="Voucher Code" class="w-full mb-2 p-2 border rounded focus:ring-2 focus:ring-pink-300" />
-  <button id="activate-btn" class="bg-gradient-to-r from-purple-400 to-purple-500 text-white p-2 rounded w-full hover:opacity-90">Activate</button>
-</section>
-
+            <button id="create-account-btn" class="bg-gray-200   p-2 rounded w-full mt-2 hover:bg-gray-300 form-button">Create Account</button>
+        </section>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
