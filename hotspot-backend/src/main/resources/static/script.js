@@ -1,12 +1,11 @@
-<script>
 document.addEventListener('DOMContentLoaded', function () {
     const baseUrl = 'https://atomichotspotapplication.onrender.com/api';
 
     /** -------------------------
      * Utility: Show Message
      ------------------------- */
+ 
     const showMessage = (text, isError = false, event = null) => {
-        const messageDiv = document.createElement('div');
         messageDiv.textContent = text;
         messageDiv.className = `p-4 rounded-lg shadow-lg transition-opacity duration-300 ${
             isError ? 'bg-red-100 text-red-500' : 'bg-green-100 text-green-800'
@@ -145,8 +144,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const loginBtn = document.getElementById('login-btn');
     if (loginBtn) {
         loginBtn.addEventListener('click', async (event) => {
-            const username = document.querySelector('input[placeholder="Username"]').value.trim();
-            const password = document.querySelector('input[type="password"]').value;
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
             if (!username || !password) {
                 showMessage("Please enter both username and password", true, event);
                 return;
@@ -174,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (createBtn) {
         createBtn.addEventListener('click', async (event) => {
             const username = document.querySelector('input[placeholder="Username"]').value.trim();
-            const password = document.querySelector('input[type="password"]').value;
+            const password = document.querySelector('input[placeholder="Password"]').value;
             if (!username || !password) {
                 showMessage("Please enter both username and password", true, event);
                 return;
@@ -222,4 +221,3 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
-</script>
