@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const baseUrl = 'http://atomichotspotapplication.onrender.com/api';
+    const baseUrl = 'https://atomichotspotapplication.onrender.com/api';
 
     const showMessage = (text, isError = false, event) => {
         const messageDiv = document.createElement('div');
