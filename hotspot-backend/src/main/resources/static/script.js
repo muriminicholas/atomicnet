@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <p class="mb-2 text-gray-700">
                     Package: <strong>${packageInfo.durationHours} hours</strong>, <strong>${packageInfo.bandwidthMbps} Mbps</strong>
                 </p>
-                <p class="mb-4">Enter your MPESA phone number (e.g., +2547XXXXXXXX or 07XXXXXXXX):</p>
+                <p class="mb-4">Enter your MPESA phone number (e.g.,07XXXXXXXX):</p>
                 <input id="mpesa-phone" type="text" placeholder="e.g., +254712345678 or 0712345678"
                     class="w-full mb-4 p-2 border rounded focus:ring-2 focus:ring-pink-300" />
                 <p class="mb-4 font-semibold">Amount: Ksh.${packageInfo.price}</p>
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('pay-button').addEventListener('click', async (event) => {
             let phoneNumber = document.getElementById('mpesa-phone').value.trim();
             if (!phoneNumber) {
-                showMessage("Please enter a valid MPESA phone number (e.g., +2547XXXXXXXX or 07XXXXXXXX)", true, event);
+                showMessage("Please enter a valid MPESA phone number ...", true, event);
                 return;
             }
 
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Validate phone number format
             if (!/^\+2547\d{8}$/.test(phoneNumber)) {
-                showMessage("Please enter a valid MPESA phone number (e.g., +2547XXXXXXXX or 07XXXXXXXX)", true, event);
+                showMessage("Please enter a valid MPESA phone number..", true, event);
                 return;
             }
 

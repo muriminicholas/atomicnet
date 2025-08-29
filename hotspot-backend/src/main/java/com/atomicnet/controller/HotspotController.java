@@ -35,7 +35,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api")
 @Validated
-@CrossOrigin(origins = {"http://localhost:5173", "https://atomichotspotapplication.onrender.com"}, allowCredentials = "true")
 public class HotspotController {
 
     private static final Logger logger = LoggerFactory.getLogger(HotspotController.class);
