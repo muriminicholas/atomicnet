@@ -4,8 +4,12 @@ document.addEventListener('DOMContentLoaded', function () {
     /** -------------------------
      * Utility: Show Message
      ------------------------- */
- 
     const showMessage = (text, isError = false, event = null) => {
+        let messageDiv = document.getElementById('messageDiv');
+        if (messageDiv) messageDiv.remove();
+
+        messageDiv = document.createElement('div');
+        messageDiv.id = 'messageDiv';
         messageDiv.textContent = text;
         messageDiv.className = `p-4 rounded-lg shadow-lg transition-opacity duration-300 ${
             isError ? 'bg-red-100 text-red-500' : 'bg-green-100 text-green-800'
@@ -23,7 +27,6 @@ document.addEventListener('DOMContentLoaded', function () {
             messageDiv.style.left = `${buttonLeft + buttonWidth / 2}px`;
             messageDiv.style.transform = 'translateX(-50%)';
         } else {
-            // fallback: center message on screen
             messageDiv.style.top = '20px';
             messageDiv.style.left = '50%';
             messageDiv.style.transform = 'translateX(-50%)';
@@ -69,7 +72,6 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
         document.body.appendChild(modal);
 
-        // Handle Pay button
         document.getElementById('pay-button').addEventListener('click', async (event) => {
             const phoneNumber = document.getElementById('mpesa-phone').value.trim();
             if (!phoneNumber || !/^\+2547\d{8}$/.test(phoneNumber)) {
@@ -79,24 +81,26 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 const response = await fetch(`${baseUrl}/initiate_payment`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phoneNumber, packageType, amount })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+                    },
+                    body: JSON.stringify({ phoneNumber, packageType, amount }),
                 });
-                const text = await response.text();
-                let result = {};
-                try { result = JSON.parse(text); } catch (e) {}
-                if (response.ok) {
-                    showMessage("A request is sent to your phone. Enter your MPESA PIN.", false, event);
-                    modal.remove();
-                } else {
-                    showMessage(result.message || "Payment initiation failed", true, event);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
                 }
+
+                const result = await response.json();
+                showMessage(result.message || "A request is sent to your phone. Enter your MPESA PIN.", false, event);
+                modal.remove();
             } catch (error) {
-                showMessage("Failed to initiate payment: " + error.message, true, event);
+                showMessage(`Failed to initiate payment: ${error.message}`, true, event);
             }
         });
 
-        // Handle Close button
         document.getElementById('close-modal').addEventListener('click', () => modal.remove());
     };
 
@@ -111,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
         { id: 'one-day-btn', type: 'one_day', amount: 40, duration: 24, bandwidth: 5 },
         { id: 'two-day-btn', type: 'two_day', amount: 70, duration: 48, bandwidth: 5 },
         { id: 'weekly-btn', type: 'weekly', amount: 250, duration: 168, bandwidth: 5 },
-        { id: 'monthly-btn', type: 'monthly', amount: 900, duration: 720, bandwidth: 5 }
+        { id: 'monthly-btn', type: 'monthly', amount: 900, duration: 720, bandwidth: 5 },
     ];
 
     packages.forEach(pkg => {
@@ -121,19 +125,27 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 const response = await fetch(`${baseUrl}/package/${pkg.type}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+                    },
+                    body: JSON.stringify({
+                        amount: pkg.amount,
+                        duration: pkg.duration,
+                        bandwidth: pkg.bandwidth,
+                    }),
                 });
-                const text = await response.text();
-                let result = {};
-                try { result = JSON.parse(text); } catch (e) {}
-                if (response.ok) {
-                    showMessage(result.message || "Package selected successfully", false, event);
-                    showPaymentPrompt(pkg.type, pkg.amount, pkg.duration, pkg.bandwidth);
-                } else {
-                    showMessage(result.message || "Package request failed", true, event);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
                 }
+
+                const result = await response.json();
+                showMessage(result.message || "Package selected successfully", false, event);
+                showPaymentPrompt(pkg.type, pkg.amount, pkg.duration, pkg.bandwidth);
             } catch (error) {
-                showMessage("Server request failure, try again later. " + error.message, true, event);
+                showMessage(`Package request failed: ${error.message}`, true, event);
             }
         });
     });
@@ -153,15 +165,22 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 const response = await fetch(`${baseUrl}/login`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
                 });
-                const text = await response.text();
-                let result = {};
-                try { result = JSON.parse(text); } catch (e) {}
-                showMessage(result.message || "Login attempt made", !response.ok, event);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                // Note: Backend does not return a token; add token handling if implemented
+                showMessage(result.message || "Login successful", false, event);
             } catch (error) {
-                showMessage("Failed to login: " + error.message, true, event);
+                showMessage(`Failed to login: ${error.message}`, true, event);
             }
         });
     }
@@ -172,8 +191,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const createBtn = document.getElementById('create-account-btn');
     if (createBtn) {
         createBtn.addEventListener('click', async (event) => {
-            const username = document.querySelector('input[placeholder="Username"]').value.trim();
-            const password = document.querySelector('input[placeholder="Password"]').value;
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
             if (!username || !password) {
                 showMessage("Please enter both username and password", true, event);
                 return;
@@ -181,15 +200,21 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 const response = await fetch(`${baseUrl}/create_account`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
                 });
-                const text = await response.text();
-                let result = {};
-                try { result = JSON.parse(text); } catch (e) {}
-                showMessage(result.message || "Account creation attempt made", !response.ok, event);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                showMessage(result.message || "Account created successfully", false, event);
             } catch (error) {
-                showMessage("Failed to create account: " + error.message, true, event);
+                showMessage(`Failed to create account: ${error.message}`, true, event);
             }
         });
     }
@@ -208,15 +233,56 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 const response = await fetch(`${baseUrl}/activate`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ voucherCode })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+                    },
+                    body: JSON.stringify({ voucherCode }),
                 });
-                const text = await response.text();
-                let result = {};
-                try { result = JSON.parse(text); } catch (e) {}
-                showMessage(result.message || "Voucher activation attempt made", !response.ok, event);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                showMessage(result.message || "Voucher activated successfully", false, event);
             } catch (error) {
-                showMessage("Failed to activate voucher: " + error.message, true, event);
+                showMessage(`Failed to activate voucher: ${error.message}`, true, event);
+            }
+        });
+    }
+
+    /** -------------------------
+     * Reconnect (MPESA Transaction Code)
+     ------------------------- */
+    const reconnectBtn = document.getElementById('reconnect-btn');
+    if (reconnectBtn) {
+        reconnectBtn.addEventListener('click', async (event) => {
+            const mpesaCode = document.getElementById('mpesa-transaction-code').value.trim();
+            if (!mpesaCode) {
+                showMessage("Please enter an MPESA transaction code", true, event);
+                return;
+            }
+            try {
+                const response = await fetch(`${baseUrl}/reconnect`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+                    },
+                    body: JSON.stringify({ mpesaCode }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                showMessage(result.message || "Reconnect successful", false, event);
+            } catch (error) {
+                showMessage(`Reconnect failed: ${error.message}`, true, event);
             }
         });
     }

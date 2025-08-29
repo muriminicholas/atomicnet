@@ -35,6 +35,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api")
 @Validated
+@CrossOrigin(origins = {"http://localhost:3000", "https://atomichotspotapplication.onrender.com"}, allowCredentials = "true")
 public class HotspotController {
 
     private static final Logger logger = LoggerFactory.getLogger(HotspotController.class);
@@ -55,7 +56,7 @@ public class HotspotController {
     private PackageInfoRepository packageInfoRepository;
 
     @Autowired
-    private MpesaConfig mpesaConfig;   // ✅ inject MpesaConfig
+    private MpesaConfig mpesaConfig;
 
     @Autowired
     private MpesaService mpesaService;
@@ -63,16 +64,24 @@ public class HotspotController {
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
 
-
-    @GetMapping("/package/{type}")
-    public ResponseEntity<ApiResponse> selectPackage(@PathVariable String type) {
+    @PostMapping("/package/{type}")
+    @Transactional
+    public ResponseEntity<ApiResponse> selectPackage(@PathVariable String type, @RequestBody(required = false) PackageRequest packageRequest) {
         logger.info("Selecting package: {}", type);
         if (type == null || type.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(new ApiResponse("error", "Package type is required"));
         }
         PackageInfo packageInfo = packageInfoRepository.findByType(type.toLowerCase()).orElse(null);
         if (packageInfo == null) {
+            logger.error("Package type {} not found in database", type);
             return ResponseEntity.badRequest().body(new ApiResponse("error", "Invalid package type"));
+        }
+        if (packageRequest != null) {
+            if (packageRequest.getAmount() != packageInfo.getPrice() ||
+                packageRequest.getDuration() != packageInfo.getDurationHours() ||
+                packageRequest.getBandwidth() != packageInfo.getBandwidthMbps()) {
+                return ResponseEntity.badRequest().body(new ApiResponse("error", "Invalid package details"));
+            }
         }
         return ResponseEntity.ok(new ApiResponse("success",
             String.format("Package %s selected. Please pay Ksh.%d via MPESA to activate %d Mbps for %d hours.",
@@ -94,7 +103,6 @@ public class HotspotController {
 
             String transactionId = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
 
-            // ✅ Use MpesaConfig getters
             mpesaService.initiateStkPush(
                 mpesaService.getAccessToken(mpesaConfig.getConsumerKey(), mpesaConfig.getConsumerSecret()),
                 mpesaConfig.getShortcode(),
@@ -122,60 +130,55 @@ public class HotspotController {
             return ResponseEntity.status(500).body(new ApiResponse("error", "Internal server error"));
         }
     }
-@PostMapping("/mpesa/callback")
-@Transactional
-public ResponseEntity<Void> handleMpesaCallback(@RequestBody MpesaCallback callback) {
-    logger.info("Received MPESA callback: {}", callback);
 
-    if (callback.getBody().getStkCallback().getResultCode() == 0) {
-        String transactionId = callback.getBody().getStkCallback().getCheckoutRequestID();
+    @PostMapping("/mpesa/callback")
+    @Transactional
+    public ResponseEntity<Void> handleMpesaCallback(@RequestBody MpesaCallback callback) {
+        logger.info("Received MPESA callback: {}", callback);
 
-        // find pending assignment by transactionId
-        PackageAssignment pending = packageAssignmentRepository.findByCheckoutRequestId(transactionId).orElse(null);
+        if (callback.getBody().getStkCallback().getResultCode() == 0) {
+            String transactionId = callback.getBody().getStkCallback().getCheckoutRequestID();
 
-        if (pending != null) {
-            // get phone number from M-Pesa metadata
-            String phoneNumber = callback.getBody().getStkCallback().getCallbackMetadata().getItem().stream()
-                .filter(item -> item.getName().equals("PhoneNumber"))
-                .map(item -> item.getValue().toString())
-                .findFirst()
-                .orElse(null);
+            PackageAssignment pending = packageAssignmentRepository.findByCheckoutRequestId(transactionId).orElse(null);
 
-            if (phoneNumber != null) {
-                // close any active session for this phone
-                guestSessionRepository.findByPhoneNumberAndActiveTrue(phoneNumber)
-                    .ifPresent(existing -> {
-                        existing.setActive(false);
-                        existing.setEndTime(LocalDateTime.now());
-                        guestSessionRepository.save(existing);
-                    });
+            if (pending != null) {
+                String phoneNumber = callback.getBody().getStkCallback().getCallbackMetadata().getItem().stream()
+                    .filter(item -> item.getName().equals("PhoneNumber"))
+                    .map(item -> item.getValue().toString())
+                    .findFirst()
+                    .orElse(null);
 
-                // start a new guest session
-                GuestSession session = new GuestSession();
-                session.setPhoneNumber(phoneNumber);
-                session.setStartTime(LocalDateTime.now());
-                session.setActive(true);
-                session.setPaid(true);
+                if (phoneNumber != null) {
+                    guestSessionRepository.findByPhoneNumberAndActiveTrue(phoneNumber)
+                        .ifPresent(existing -> {
+                            existing.setActive(false);
+                            existing.setEndTime(LocalDateTime.now());
+                            guestSessionRepository.save(existing);
+                        });
 
-                guestSessionRepository.save(session);
+                    GuestSession session = new GuestSession();
+                    session.setPhoneNumber(phoneNumber);
+                    session.setStartTime(LocalDateTime.now());
+                    session.setActive(true);
+                    session.setPaid(true);
+                    guestSessionRepository.save(session);
 
-                // mark assignment as active (optional if you keep package logic)
-                pending.setActive(true);
-                packageAssignmentRepository.save(pending);
+                    pending.setActive(true);
+                    packageAssignmentRepository.save(pending);
 
-                logger.info("✅ Guest session started for phone: {}", phoneNumber);
+                    logger.info("✅ Guest session started for phone: {}", phoneNumber);
+                } else {
+                    logger.warn("⚠️ Phone number missing in MPESA callback metadata");
+                }
             } else {
-                logger.warn("⚠️ Phone number missing in MPESA callback metadata");
+                logger.warn("⚠️ No pending assignment found for transaction: {}", transactionId);
             }
         } else {
-            logger.warn("⚠️ No pending assignment found for transaction: {}", transactionId);
+            logger.warn("❌ MPESA callback failed with result code: {}", callback.getBody().getStkCallback().getResultCode());
         }
-    } else {
-        logger.warn("❌ MPESA callback failed with result code: {}", callback.getBody().getStkCallback().getResultCode());
-    }
 
-    return ResponseEntity.ok().build();
-}
+        return ResponseEntity.ok().build();
+    }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse> login(@Valid @RequestBody LoginRequest request) {
@@ -184,28 +187,24 @@ public ResponseEntity<Void> handleMpesaCallback(@RequestBody MpesaCallback callb
         if (user != null && passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             user.setActive(true);
             userRepository.save(user);
+            // TODO: Add JWT token generation if required
             return ResponseEntity.ok(new ApiResponse("success", "Login successful"));
         }
         return ResponseEntity.status(401).body(new ApiResponse("error", "Invalid credentials"));
     }
 
     @PostMapping("/guest/start")
-      @Transactional
+    @Transactional
     public ResponseEntity<ApiResponse> startGuest(@RequestParam String ip, @RequestParam String mac) {
-    GuestSession session = new GuestSession();
-    session.setIpAddress(ip);
-    session.setMacAddress(mac);
-    session.setStartTime(LocalDateTime.now());
-    session.setActive(false);   // not yet active until payment
-    session.setPaid(false);
-    guestSessionRepository.save(session);
-      ApiResponse response = new ApiResponse("success",  "Guest session created. Please complete payment to activate.");
-    return ResponseEntity.ok(response);
-  
-}
- 
-
-    
+        GuestSession session = new GuestSession();
+        session.setIpAddress(ip);
+        session.setMacAddress(mac);
+        session.setStartTime(LocalDateTime.now());
+        session.setActive(false);
+        session.setPaid(false);
+        guestSessionRepository.save(session);
+        return ResponseEntity.ok(new ApiResponse("success", "Guest session created. Please complete payment to activate."));
+    }
 
     @PostMapping("/create_account")
     @Transactional
@@ -265,4 +264,41 @@ public ResponseEntity<Void> handleMpesaCallback(@RequestBody MpesaCallback callb
             String.format("Package %s activated for %s: %d Mbps for %d hours.",
                 packageInfo.getType(), request.getUsername(), packageInfo.getBandwidthMbps(), packageInfo.getDurationHours())));
     }
+
+    @PostMapping("/reconnect")
+    @Transactional
+    public ResponseEntity<ApiResponse> reconnect(@Valid @RequestBody ReconnectRequest request) {
+        logger.info("Reconnecting with MPESA code: {}", request.getMpesaCode());
+        PackageAssignment assignment = packageAssignmentRepository.findByCheckoutRequestId(request.getMpesaCode()).orElse(null);
+        if (assignment == null) {
+            return ResponseEntity.badRequest().body(new ApiResponse("error", "Invalid MPESA transaction code"));
+        }
+        if (assignment.isActive()) {
+            return ResponseEntity.ok(new ApiResponse("success", "Session already active"));
+        }
+        assignment.setActive(true);
+        assignment.setStartTime(LocalDateTime.now());
+        packageAssignmentRepository.save(assignment);
+        return ResponseEntity.ok(new ApiResponse("success", "Reconnect successful"));
+    }
+}
+
+// DTO classes
+class PackageRequest {
+    private int amount;
+    private int duration;
+    private int bandwidth;
+
+    public int getAmount() { return amount; }
+    public void setAmount(int amount) { this.amount = amount; }
+    public int getDuration() { return duration; }
+    public void setDuration(int duration) { this.duration = duration; }
+    public int getBandwidth() { return bandwidth; }
+    public void setBandwidth(int bandwidth) { this.bandwidth = bandwidth; }
+}
+
+class ReconnectRequest {
+    private String mpesaCode;
+    public String getMpesaCode() { return mpesaCode; }
+    public void setMpesaCode(String mpesaCode) { this.mpesaCode = mpesaCode; }
 }
