@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     Payment for ${packageInfo.type.replace('_', ' ')}
                 </h2>
                 <p class="mb-2 text-gray-700">
-                    Package: <strong>${packageInfo.durationHours} hours</strong>, <strong>${packageInfo.bandwidthMbps} Mbps</strong>
+                    Package: <strong>${packageInfo.durationHours} hours</strong>
                 </p>
                 <p class="mb-4">Enter your MPESA phone number:</p>
                 <input id="mpesa-phone" type="text" placeholder="e.g., +2547XXXXXXXX"
@@ -73,8 +73,10 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.appendChild(modal);
 
         document.getElementById('pay-button').addEventListener('click', async (event) => {
-            const phoneNumber = document.getElementById('mpesa-phone').value.trim();
-            if (!phoneNumber || !/^\+2547\d{8}$/.test(phoneNumber)) {
+            const PhoneNumber = document.getElementById('mpesa-phone').value.trim();
+        if (PhoneNumber.startsWith("07") && PhoneNumber.length() == 10) {
+            PhoneNumber = "+254" + PhoneNumber.substring(1);
+            logger.info("phone number from {} to {}", request.getPhoneNumber(), PhoneNumber);
                 showMessage("Please enter a valid MPESA phone number (e.g., +2547XXXXXXXX)", true, event);
                 return;
             }
@@ -135,7 +137,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 const result = await response.json();
-                showMessage(result.message || "Package selected successfully", false, event);
                 showPaymentPrompt(result.data || pkg); // Use backend data if available
             } catch (error) {
                 showMessage(`Package request failed: ${error.message}`, true, event);
