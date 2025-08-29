@@ -42,22 +42,22 @@ document.addEventListener('DOMContentLoaded', function () {
     /** -------------------------
      * Payment Modal
      ------------------------- */
-    const showPaymentPrompt = (packageType, amount, duration, bandwidth) => {
+    const showPaymentPrompt = (packageInfo) => {
         const modal = document.createElement('div');
         modal.id = 'payment-modal';
         modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
         modal.innerHTML = `
             <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
                 <h2 class="text-lg font-semibold mb-4 text-pink-600">
-                    Payment for ${packageType.replace('_', ' ')}
+                    Payment for ${packageInfo.type.replace('_', ' ')}
                 </h2>
                 <p class="mb-2 text-gray-700">
-                    Package: <strong>${duration} hours</strong>, <strong>${bandwidth} Mbps</strong>
+                    Package: <strong>${packageInfo.durationHours} hours</strong>, <strong>${packageInfo.bandwidthMbps} Mbps</strong>
                 </p>
                 <p class="mb-4">Enter your MPESA phone number:</p>
                 <input id="mpesa-phone" type="text" placeholder="e.g., +2547XXXXXXXX"
                     class="w-full mb-4 p-2 border rounded focus:ring-2 focus:ring-pink-300" />
-                <p class="mb-4 font-semibold">Amount: Ksh.${amount}</p>
+                <p class="mb-4 font-semibold">Amount: Ksh.${packageInfo.price}</p>
                 <div class="flex gap-4">
                     <button id="pay-button"
                         class="bg-gradient-to-r from-green-400 to-green-500 text-white p-2 rounded w-full hover:opacity-90">
@@ -83,9 +83,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
                     },
-                    body: JSON.stringify({ phoneNumber, packageType, amount }),
+                    body: JSON.stringify({ phoneNumber, packageType: packageInfo.type, amount: packageInfo.price }),
                 });
 
                 if (!response.ok) {
@@ -127,13 +126,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
                     },
-                    body: JSON.stringify({
-                        amount: pkg.amount,
-                        duration: pkg.duration,
-                        bandwidth: pkg.bandwidth,
-                    }),
                 });
 
                 if (!response.ok) {
@@ -143,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const result = await response.json();
                 showMessage(result.message || "Package selected successfully", false, event);
-                showPaymentPrompt(pkg.type, pkg.amount, pkg.duration, pkg.bandwidth);
+                showPaymentPrompt(result.data || pkg); // Use backend data if available
             } catch (error) {
                 showMessage(`Package request failed: ${error.message}`, true, event);
             }
@@ -177,7 +170,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 const result = await response.json();
-                // Note: Backend does not return a token; add token handling if implemented
                 showMessage(result.message || "Login successful", false, event);
             } catch (error) {
                 showMessage(`Failed to login: ${error.message}`, true, event);
@@ -235,7 +227,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
                     },
                     body: JSON.stringify({ voucherCode }),
                 });
@@ -269,7 +260,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
                     },
                     body: JSON.stringify({ mpesaCode }),
                 });

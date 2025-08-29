@@ -35,7 +35,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api")
 @Validated
-@CrossOrigin(origins = {"http://localhost:3000", "https://atomichotspotapplication.onrender.com"}, allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173", "https://atomichotspotapplication.onrender.com"}, allowCredentials = "true")
 public class HotspotController {
 
     private static final Logger logger = LoggerFactory.getLogger(HotspotController.class);
@@ -69,23 +69,20 @@ public class HotspotController {
     public ResponseEntity<ApiResponse> selectPackage(@PathVariable String type, @RequestBody(required = false) PackageRequest packageRequest) {
         logger.info("Selecting package: {}", type);
         if (type == null || type.trim().isEmpty()) {
+            logger.error("Package type is null or empty");
             return ResponseEntity.badRequest().body(new ApiResponse("error", "Package type is required"));
         }
         PackageInfo packageInfo = packageInfoRepository.findByType(type.toLowerCase()).orElse(null);
         if (packageInfo == null) {
             logger.error("Package type {} not found in database", type);
-            return ResponseEntity.badRequest().body(new ApiResponse("error", "Invalid package type"));
+            return ResponseEntity.badRequest().body(new ApiResponse("error", "Invalid package type: " + type));
         }
-        if (packageRequest != null) {
-            if (packageRequest.getAmount() != packageInfo.getPrice() ||
-                packageRequest.getDuration() != packageInfo.getDurationHours() ||
-                packageRequest.getBandwidth() != packageInfo.getBandwidthMbps()) {
-                return ResponseEntity.badRequest().body(new ApiResponse("error", "Invalid package details"));
-            }
-        }
+        logger.info("Found package: type={}, price={}, duration={}, bandwidth={}",
+            packageInfo.getType(), packageInfo.getPrice(), packageInfo.getDurationHours(), packageInfo.getBandwidthMbps());
         return ResponseEntity.ok(new ApiResponse("success",
             String.format("Package %s selected. Please pay Ksh.%d via MPESA to activate %d Mbps for %d hours.",
-                packageInfo.getType(), packageInfo.getPrice(), packageInfo.getBandwidthMbps(), packageInfo.getDurationHours())));
+                packageInfo.getType(), packageInfo.getPrice(), packageInfo.getBandwidthMbps(), packageInfo.getDurationHours()),
+            packageInfo)); // Return PackageInfo for frontend
     }
 
     @PostMapping("/initiate_payment")
@@ -95,9 +92,11 @@ public class HotspotController {
         try {
             PackageInfo packageInfo = packageInfoRepository.findByType(request.getPackageType().toLowerCase()).orElse(null);
             if (packageInfo == null) {
+                logger.error("Invalid package type: {}", request.getPackageType());
                 return ResponseEntity.badRequest().body(new ApiResponse("error", "Invalid package type"));
             }
             if (!userRepository.existsById(request.getPhoneNumber())) {
+                logger.error("Phone number not registered: {}", request.getPhoneNumber());
                 return ResponseEntity.badRequest().body(new ApiResponse("error", "Phone number not registered"));
             }
 
@@ -187,7 +186,6 @@ public class HotspotController {
         if (user != null && passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             user.setActive(true);
             userRepository.save(user);
-            // TODO: Add JWT token generation if required
             return ResponseEntity.ok(new ApiResponse("success", "Login successful"));
         }
         return ResponseEntity.status(401).body(new ApiResponse("error", "Invalid credentials"));
@@ -283,7 +281,6 @@ public class HotspotController {
     }
 }
 
-// DTO classes
 class PackageRequest {
     private int amount;
     private int duration;
