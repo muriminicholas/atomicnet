@@ -52,10 +52,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     Payment for ${packageInfo.type.replace('_', ' ')}
                 </h2>
                 <p class="mb-2 text-gray-700">
-                    Package: <strong>${packageInfo.durationHours} hours</strong>
+                    Package: <strong>${packageInfo.durationHours} hours</strong>, <strong>${packageInfo.bandwidthMbps} Mbps</strong>
                 </p>
-                <p class="mb-4">Enter your MPESA phone number:</p>
-                <input id="mpesa-phone" type="text" placeholder="e.g., +2547XXXXXXXX"
+                <p class="mb-4">Enter your MPESA phone number (e.g., +2547XXXXXXXX or 07XXXXXXXX):</p>
+                <input id="mpesa-phone" type="text" placeholder="e.g., +254712345678 or 0712345678"
                     class="w-full mb-4 p-2 border rounded focus:ring-2 focus:ring-pink-300" />
                 <p class="mb-4 font-semibold">Amount: Ksh.${packageInfo.price}</p>
                 <div class="flex gap-4">
@@ -73,28 +73,46 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.appendChild(modal);
 
         document.getElementById('pay-button').addEventListener('click', async (event) => {
-            const PhoneNumber = document.getElementById('mpesa-phone').value.trim();
-        if (PhoneNumber.startsWith("07") && PhoneNumber.length() == 10) {
-            PhoneNumber = "+254" + PhoneNumber.substring(1);
-            logger.info("phone number from {} to {}", request.getPhoneNumber(), PhoneNumber);
-                showMessage("Please enter a valid MPESA phone number (e.g., +2547XXXXXXXX)", true, event);
+            let phoneNumber = document.getElementById('mpesa-phone').value.trim();
+            if (!phoneNumber) {
+                showMessage("Please enter a valid MPESA phone number (e.g., +2547XXXXXXXX or 07XXXXXXXX)", true, event);
                 return;
             }
+
+            // Normalize phone number: convert 07XXXXXXXX to +2547XXXXXXXX
+            if (/^07\d{8}$/.test(phoneNumber)) {
+                console.log(`Normalizing phone number from ${phoneNumber} to +254${phoneNumber.substring(1)}`);
+                phoneNumber = '+254' + phoneNumber.substring(1); // Convert 0712345678 to +254712345678
+            }
+
+            // Validate phone number format
+            if (!/^\+2547\d{8}$/.test(phoneNumber)) {
+                showMessage("Please enter a valid MPESA phone number (e.g., +2547XXXXXXXX or 07XXXXXXXX)", true, event);
+                return;
+            }
+
             try {
                 const response = await fetch(`${baseUrl}/initiate_payment`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ PhoneNumber, packageType: packageInfo.type, amount: packageInfo.price }),
+                    body: JSON.stringify({ phoneNumber, packageType: packageInfo.type, amount: packageInfo.price }),
                 });
 
+                let errorData = {};
+                try {
+                    errorData = await response.json();
+                } catch (jsonError) {
+                    console.error("Failed to parse JSON response:", jsonError);
+                    throw new Error(`Server returned invalid response: HTTP ${response.status}`);
+                }
+
                 if (!response.ok) {
-                    const errorData = await response.json();
                     throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
                 }
 
-                const result = await response.json();
+                const result = errorData; // Reuse parsed JSON
                 showMessage(result.message || "A request is sent to your phone. Enter your MPESA PIN.", false, event);
                 modal.remove();
             } catch (error) {
