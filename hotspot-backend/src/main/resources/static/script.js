@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ phoneNumber, packageType: packageInfo.type, amount: packageInfo.price }),
+                    body: JSON.stringify({ PhoneNumber, packageType: packageInfo.type, amount: packageInfo.price }),
                 });
 
                 if (!response.ok) {
