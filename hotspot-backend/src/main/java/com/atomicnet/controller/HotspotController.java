@@ -83,100 +83,121 @@ public class HotspotController {
                 packageInfo.getType(), packageInfo.getPrice(), packageInfo.getBandwidthMbps(), packageInfo.getDurationHours()),
             packageInfo)); // Return PackageInfo for frontend
     }
-
-    @PostMapping("/initiate_payment")
-    @Transactional
-    public ResponseEntity<ApiResponse> initiatePayment(@Valid @RequestBody PaymentRequest request) {
-        logger.info("Initiating payment for phone: {}", request.getPhoneNumber());
-        try {
-            PackageInfo packageInfo = packageInfoRepository.findByType(request.getPackageType().toLowerCase()).orElse(null);
-            if (packageInfo == null) {
-                logger.error("Invalid package type: {}", request.getPackageType());
-                return ResponseEntity.badRequest().body(new ApiResponse("error", "Invalid package type"));
-            }
-            if (!userRepository.existsById(request.getPhoneNumber())) {
-                logger.error("Phone number not registered: {}", request.getPhoneNumber());
-                return ResponseEntity.badRequest().body(new ApiResponse("error", "Phone number not registered"));
-            }
-
-            String transactionId = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-
-            mpesaService.initiateStkPush(
-                mpesaService.getAccessToken(mpesaConfig.getConsumerKey(), mpesaConfig.getConsumerSecret()),
-                mpesaConfig.getShortcode(),
-                mpesaConfig.getPasskey(),
-                mpesaConfig.getCallbackUrl(),
-                request.getPhoneNumber(),
-                packageInfo.getPrice(),
-                packageInfo.getType(),
-                transactionId
-            );
-
-            PackageAssignment pending = new PackageAssignment();
-            pending.setCheckoutRequestId(transactionId);
-            pending.setUsername("pending_" + transactionId);
-            pending.setPackageType(packageInfo.getType());
-            pending.setBandwidthMbps(packageInfo.getBandwidthMbps());
-            pending.setDurationHours(packageInfo.getDurationHours());
-            pending.setStartTime(LocalDateTime.now());
-            pending.setActive(false);
-            packageAssignmentRepository.save(pending);
-
-            return ResponseEntity.ok(new ApiResponse("success", "STK push initiated. Please check your phone."));
-        } catch (IOException e) {
-            logger.error("Payment initiation failed", e);
-            return ResponseEntity.status(500).body(new ApiResponse("error", "Internal server error"));
+   
+   @PostMapping("/initiate_payment")
+@Transactional
+public ResponseEntity<ApiResponse> initiatePayment(@Valid @RequestBody PaymentRequest request) {
+    logger.info("Initiating payment for phone: {}", request.getPhoneNumber());
+    try {
+        // Fetch the package info based on the type
+        PackageInfo packageInfo = packageInfoRepository.findByType(request.getPackageType().toLowerCase()).orElse(null);
+        if (packageInfo == null) {
+            logger.error("Invalid package type: {}", request.getPackageType());
+            return ResponseEntity.badRequest().body(new ApiResponse("error", "Invalid package type"));
         }
+
+        // Check if the phone number exists in the system
+        if (!userRepository.existsById(request.getPhoneNumber())) {
+            logger.error("Phone number not registered: {}", request.getPhoneNumber());
+            return ResponseEntity.badRequest().body(new ApiResponse("error", "Phone number not registered"));
+        }
+
+        // Generate a unique transaction ID
+        String transactionId = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+
+        // Get the M-Pesa access token from the MpesaService
+        String accessToken = mpesaService.getAccessToken(mpesaConfig.getConsumerKey(), mpesaConfig.getConsumerSecret());
+
+        // Initiate the STK Push
+        mpesaService.initiateStkPush(
+            accessToken,
+            mpesaConfig.getShortcode(),
+            mpesaConfig.getPasskey(),
+            mpesaConfig.getCallbackUrl(),
+            request.getPhoneNumber(),
+            packageInfo.getPrice(),
+            packageInfo.getType(),
+            transactionId
+        );
+
+        // Save the pending package assignment in the database
+        PackageAssignment pending = new PackageAssignment();
+        pending.setCheckoutRequestId(transactionId);
+        pending.setUsername("pending_" + transactionId);
+        pending.setPackageType(packageInfo.getType());
+        pending.setBandwidthMbps(packageInfo.getBandwidthMbps());
+        pending.setDurationHours(packageInfo.getDurationHours());
+        pending.setStartTime(LocalDateTime.now());
+        pending.setActive(false);
+        packageAssignmentRepository.save(pending);
+
+        return ResponseEntity.ok(new ApiResponse("success", "STK push initiated. Please check your phone."));
+    } catch (IOException e) {
+        logger.error("Payment initiation failed", e);
+        return ResponseEntity.status(500).body(new ApiResponse("error", "Internal server error"));
     }
+}
 
-    @PostMapping("/mpesa/callback")
-    @Transactional
-    public ResponseEntity<Void> handleMpesaCallback(@RequestBody MpesaCallback callback) {
-        logger.info("Received MPESA callback: {}", callback);
 
-        if (callback.getBody().getStkCallback().getResultCode() == 0) {
-            String transactionId = callback.getBody().getStkCallback().getCheckoutRequestID();
+ @PostMapping("/mpesa/callback")
+@Transactional
+public ResponseEntity<Void> handleMpesaCallback(@RequestBody MpesaCallback callback) {
+    logger.info("Received MPESA callback: {}", callback);
 
-            PackageAssignment pending = packageAssignmentRepository.findByCheckoutRequestId(transactionId).orElse(null);
+    // Check if the transaction was successful (resultCode = 0 means success)
+    if (callback.getBody().getStkCallback().getResultCode() == 0) {
+        String transactionId = callback.getBody().getStkCallback().getCheckoutRequestID();
 
-            if (pending != null) {
-                String phoneNumber = callback.getBody().getStkCallback().getCallbackMetadata().getItem().stream()
-                    .filter(item -> item.getName().equals("PhoneNumber"))
-                    .map(item -> item.getValue().toString())
-                    .findFirst()
-                    .orElse(null);
+        // Find the pending package assignment by the transaction ID
+        PackageAssignment pending = packageAssignmentRepository.findByCheckoutRequestId(transactionId).orElse(null);
 
-                if (phoneNumber != null) {
-                    guestSessionRepository.findByPhoneNumberAndActiveTrue(phoneNumber)
-                        .ifPresent(existing -> {
-                            existing.setActive(false);
-                            existing.setEndTime(LocalDateTime.now());
-                            guestSessionRepository.save(existing);
-                        });
+        if (pending != null) {
+            // Extract the phone number from the callback metadata
+            String phoneNumber = callback.getBody().getStkCallback().getCallbackMetadata().getItem().stream()
+                .filter(item -> item.getName().equals("PhoneNumber"))
+                .map(item -> item.getValue().toString())
+                .findFirst()
+                .orElse(null);
 
-                    GuestSession session = new GuestSession();
-                    session.setPhoneNumber(phoneNumber);
-                    session.setStartTime(LocalDateTime.now());
-                    session.setActive(true);
-                    session.setPaid(true);
-                    guestSessionRepository.save(session);
+            if (phoneNumber != null) {
+                // Check if there's an active guest session for the phone number
+                guestSessionRepository.findByPhoneNumberAndActiveTrue(phoneNumber)
+                    .ifPresent(existing -> {
+                        // Deactivate any existing active session
+                        existing.setActive(false);
+                        existing.setEndTime(LocalDateTime.now());
+                        guestSessionRepository.save(existing);
+                    });
 
-                    pending.setActive(true);
-                    packageAssignmentRepository.save(pending);
+                // Create a new guest session for the user
+                GuestSession session = new GuestSession();
+                session.setPhoneNumber(phoneNumber);
+                session.setStartTime(LocalDateTime.now());
+                session.setActive(true);
+                session.setPaid(true);  // Mark as paid
+                guestSessionRepository.save(session);
 
-                    logger.info("✅ Guest session started for phone: {}", phoneNumber);
-                } else {
-                    logger.warn("⚠️ Phone number missing in MPESA callback metadata");
-                }
+                // Activate the pending package assignment
+                pending.setActive(true);
+                packageAssignmentRepository.save(pending);
+
+                logger.info("✅ Guest session started for phone: {}", phoneNumber);
             } else {
-                logger.warn("⚠️ No pending assignment found for transaction: {}", transactionId);
+                logger.warn("⚠️ Phone number missing in MPESA callback metadata for transaction: {}", transactionId);
             }
         } else {
-            logger.warn("❌ MPESA callback failed with result code: {}", callback.getBody().getStkCallback().getResultCode());
+            logger.warn("⚠️ No pending assignment found for transaction: {}", transactionId);
         }
+    } else {
+        // Log the failure result code and message
+        logger.warn("❌ MPESA callback failed with result code: {}", callback.getBody().getStkCallback().getResultCode());
 
-        return ResponseEntity.ok().build();
+        // You can add further handling based on the resultCode (e.g., retry, alert, etc.)
+        // You could also send a message or notify the user of failure here
     }
+
+    return ResponseEntity.ok().build();
+}
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse> login(@Valid @RequestBody LoginRequest request) {

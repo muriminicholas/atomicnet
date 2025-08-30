@@ -17,28 +17,30 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for public APIs
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/", "/index.html", 
-                    "/styles.css", "/script.js",
-                    "/internet1.jpg",
-                    "/api/**" // Allow all API endpoints
-                ).permitAll()
-                .anyRequest().authenticated()
-            )
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()));
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+        .csrf(csrf -> csrf.disable())  // Disable CSRF for public APIs
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers(
+                "/", "/index.html", 
+                "/styles.css", "/script.js",
+                "/internet1.jpg",
+                "/api/**",  // Allow all API endpoints
+                "/api/mpesa/callback"  // Allow M-Pesa callback
+            ).permitAll()
+            .anyRequest().authenticated() // Secure other requests
+        )
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
-        return http.build();
-    }
+    return http.build();  // Make sure to return the SecurityFilterChain instance
+}
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfig = new CorsConfiguration();
         corsConfig.setAllowedOrigins(Arrays.asList(
-            "http://localhost:5173",
+            "http://localhost:*",
             "https://atomichotspotapplication.onrender.com"
         ));
         corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "OPTIONS"));
