@@ -12,4 +12,5 @@ public interface GuestSessionRepository extends JpaRepository<GuestSession, Long
     Optional<GuestSession> findByPhoneNumberAndActiveTrue(String phoneNumber);
 
     GuestSession findByIpAddress(String ipAddress);
+    boolean existsByPhoneNumber(String phoneNumber);
 }

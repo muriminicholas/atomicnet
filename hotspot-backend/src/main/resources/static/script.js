@@ -79,9 +79,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Normalize phone number: convert 07XXXXXXXX to +2547XXXXXXXX
+            // Normalize phone number
             if (/^07\d{8}$/.test(phoneNumber)) {
-                console.log(`Normalizing phone number from ${phoneNumber} to +254${phoneNumber.substring(1)}`);
                 phoneNumber = '+254' + phoneNumber.substring(1); // Convert 0712345678 to +254712345678
             }
 
@@ -100,20 +99,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     body: JSON.stringify({ phoneNumber, packageType: packageInfo.type, amount: packageInfo.price }),
                 });
 
+                const responseBody = await response.text();
+                if (!response.ok || !responseBody) {
+                    throw new Error('Empty response from server');
+                }
+
                 let errorData = {};
                 try {
-                    errorData = await response.json();
+                    errorData = JSON.parse(responseBody);
                 } catch (jsonError) {
-                    console.error("Failed to parse JSON response:", jsonError);
-                    throw new Error(`Server returned invalid response: HTTP ${response.status}`);
+                    throw new Error('Failed to parse JSON response from server');
                 }
 
                 if (!response.ok) {
-                    throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+                    throw new Error(errorData.message || `Error: ${response.status}`);
                 }
 
-                const result = errorData; // Reuse parsed JSON
-                showMessage(result.message || "A request is sent to your phone. Enter your MPESA PIN.", false, event);
+                showMessage(errorData.message || "Request sent to your phone. Enter MPESA PIN.", false, event);
                 modal.remove();
             } catch (error) {
                 showMessage(`Failed to initiate payment: ${error.message}`, true, event);
@@ -128,13 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
      ------------------------- */
     const packages = [
         { id: 'one-hour-btn', type: 'one_hour', amount: 10, duration: 1, bandwidth: 5 },
-        { id: 'two-hour-btn', type: 'two_hour', amount: 15, duration: 2, bandwidth: 5 },
-        { id: 'four-hour-btn', type: 'four_hour', amount: 25, duration: 4, bandwidth: 5 },
-        { id: 'six-hour-btn', type: 'six_hour', amount: 30, duration: 6, bandwidth: 5 },
-        { id: 'one-day-btn', type: 'one_day', amount: 40, duration: 24, bandwidth: 5 },
-        { id: 'two-day-btn', type: 'two_day', amount: 70, duration: 48, bandwidth: 5 },
-        { id: 'weekly-btn', type: 'weekly', amount: 250, duration: 168, bandwidth: 5 },
-        { id: 'monthly-btn', type: 'monthly', amount: 900, duration: 720, bandwidth: 5 },
+        // More packages ...
     ];
 
     packages.forEach(pkg => {
