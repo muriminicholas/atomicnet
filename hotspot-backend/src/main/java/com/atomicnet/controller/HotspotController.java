@@ -55,8 +55,6 @@ public class HotspotController {
     @Autowired
     private PackageInfoRepository packageInfoRepository;
 
-    @Autowired
-    private MpesaConfig mpesaConfig;
 
     @Autowired
     private MpesaService mpesaService;
@@ -109,7 +107,7 @@ public class HotspotController {
 
             // Get the M-Pesa access token
             String accessToken = mpesaService.getAccessToken("consumerKey", "consumerSecret");
-
+               System.out.println("Access Token: " + accessToken); 
             // Initiate the STK Push
             mpesaService.initiateStkPush(
                 accessToken,
